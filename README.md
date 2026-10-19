@@ -1,6 +1,6 @@
 # IoT Cloud Manager
 
-Système de gestion des objets IoT basé sur MQTT et le Cloud (sujet n°8).
+Système de gestion des objets IoT basé sur MQTT et le Cloud.
 
 Des capteurs simulés publient leurs mesures sur un broker MQTT. Le backend les reçoit, les enregistre dans une base de données et les expose à un dashboard web. L'ensemble tourne dans des conteneurs Docker sur une machine virtuelle cloud.
 
