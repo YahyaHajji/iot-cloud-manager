@@ -1,0 +1,24 @@
+# Secrets
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Java / Spring Boot
+target/
+*.class
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# IDE et système
+.idea/
+.vscode/
+.DS_Store
+*.log
