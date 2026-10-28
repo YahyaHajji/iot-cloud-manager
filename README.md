@@ -10,7 +10,7 @@ Des capteurs simulés publient leurs mesures sur un broker MQTT. Le backend les 
 |---|---|---|
 | `simulator/` | Capteurs simulés qui publient sur MQTT | Python |
 | `backend/` | API REST, réception MQTT, base de données | Spring Boot, PostgreSQL |
-| `frontend/` | Dashboard web | Angular |
+| `frontend/` | Dashboard web | React |
 | `deploy/` | Docker Compose, configuration des services, déploiement | Docker, Mosquitto |
 
 ## Démarrage rapide (Mosquitto et PostgreSQL en local)
