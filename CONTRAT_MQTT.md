@@ -1,10 +1,5 @@
 # Contrat des messages MQTT – IoT Cloud Manager
 
-**Version du contrat :** 1 (proposition du 28 octobre, à valider par l'équipe)
-**Concerne :** Membre 1 (simulateurs Python), Membre 2 (backend Spring Boot), Membre 4 (configuration Mosquitto / ACL)
-Le frontend React ne parle jamais MQTT : il passe uniquement par l'API REST du backend.
-
----
 
 ## 1. Règles générales
 
