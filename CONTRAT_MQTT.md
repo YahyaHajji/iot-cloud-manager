@@ -1,6 +1,6 @@
 # Contrat des messages MQTT – IoT Cloud Manager
 
-**Version du contrat :** 1 (proposition du 28 octobre, à valider par l'équipe)
+**Version du contrat :** 1 (rédigée le 28 octobre, validée par l'équipe en novembre 2026 : c'est la référence à suivre)
 **Concerne :** Membre 1 (simulateurs Python), Membre 2 (backend Spring Boot), Membre 4 (configuration Mosquitto / ACL)
 Le frontend React ne parle jamais MQTT : il passe uniquement par l'API REST du backend.
 
@@ -255,10 +255,10 @@ Un capteur ne peut donc pas se faire passer pour un autre, ni envoyer de command
 
 | N° | Point | OK ? |
 |---|---|---|
-| 1 | Structure des topics `iot/devices/{deviceId}/...` | |
-| 2 | Télémétrie avec un tableau `measurements` et catalogue des types | |
-| 3 | QoS 1 partout, retain uniquement sur `status` | |
-| 4 | LWT + délai de 3 × `intervalSec` pour l'état hors ligne | |
-| 5 | Commandes `set_interval`, `enable`, `disable`, `ping` avec ack | |
-| 6 | Rejet des capteurs non déclarés | |
-| 7 | ACL Mosquitto proposée pour la semaine 5 | |
+| 1 | Structure des topics `iot/devices/{deviceId}/...` | OK |
+| 2 | Télémétrie avec un tableau `measurements` et catalogue des types | OK |
+| 3 | QoS 1 partout, retain uniquement sur `status` | OK |
+| 4 | LWT + délai de 3 × `intervalSec` pour l'état hors ligne | OK |
+| 5 | Commandes `set_interval`, `enable`, `disable`, `ping` avec ack | OK |
+| 6 | Rejet des capteurs non déclarés | OK |
+| 7 | ACL Mosquitto proposée pour la semaine 5 | OK |
