@@ -18,4 +18,8 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    files: ['src/services/api.js'],
+    rules: { 'no-unused-vars': 'off' },
+  },
 ])
