@@ -1,6 +1,5 @@
 # Contrat des messages MQTT – IoT Cloud Manager
 
-
 ## 1. Règles générales
 
 | Règle | Valeur |
@@ -196,7 +195,7 @@ Pour chaque message reçu, le backend vérifie dans l'ordre :
 4. Le capteur existe en base et est actif (section 6).
 5. Les champs obligatoires sont présents et du bon type.
 6. Chaque `type` de mesure est dans le catalogue, avec la bonne `unit` et une valeur dans la plage.
-7. Le `messageId` n'a pas déjà été enregistré (colonne `UNIQUE` en base) ; sinon le doublon est ignoré sans erreur.
+7. Le `messageId` n'a pas déjà été enregistré (contrainte `UNIQUE (message_id, type)` en base : un message contient plusieurs mesures, donc plusieurs lignes avec le même `message_id`) ; sinon le doublon est ignoré sans erreur.
 
 Tout message rejeté est logué avec sa raison et compté dans `mqtt_messages_rejected_total{reason=...}`, ce qui alimente directement Prometheus et Grafana (semaine 7).
 
@@ -240,7 +239,7 @@ Un capteur ne peut donc pas se faire passer pour un autre, ni envoyer de command
 
 | Message | Table(s) |
 |---|---|
-| `telemetry` | `measurement(id, device_id, message_id UNIQUE, type, value, unit, measured_at, received_at)` – une ligne par entrée de `measurements` |
+| `telemetry` | `measurement(id, device_id, message_id, type, value, unit, measured_at, received_at)` avec `UNIQUE (message_id, type)` – une ligne par entrée de `measurements` |
 | `status` | `device.status`, `device.last_seen_at`, `device.interval_sec` |
 | `commands` / `ack` | `command(id, device_id, type, params, status, created_at, acknowledged_at)` |
 
@@ -250,10 +249,10 @@ Un capteur ne peut donc pas se faire passer pour un autre, ni envoyer de command
 
 | N° | Point | OK ? |
 |---|---|---|
-| 1 | Structure des topics `iot/devices/{deviceId}/...` | |
-| 2 | Télémétrie avec un tableau `measurements` et catalogue des types | |
-| 3 | QoS 1 partout, retain uniquement sur `status` | |
-| 4 | LWT + délai de 3 × `intervalSec` pour l'état hors ligne | |
-| 5 | Commandes `set_interval`, `enable`, `disable`, `ping` avec ack | |
-| 6 | Rejet des capteurs non déclarés | |
-| 7 | ACL Mosquitto proposée pour la semaine 5 | |
+| 1 | Structure des topics `iot/devices/{deviceId}/...` | OK |
+| 2 | Télémétrie avec un tableau `measurements` et catalogue des types | OK |
+| 3 | QoS 1 partout, retain uniquement sur `status` | OK |
+| 4 | LWT + délai de 3 × `intervalSec` pour l'état hors ligne | OK |
+| 5 | Commandes `set_interval`, `enable`, `disable`, `ping` avec ack | OK |
+| 6 | Rejet des capteurs non déclarés | OK |
+| 7 | ACL Mosquitto proposée pour la semaine 5 | OK |
