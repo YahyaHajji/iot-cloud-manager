@@ -1,0 +1,87 @@
+package com.iotcloudmanager.backend.entity;
+
+import jakarta.persistence.*;
+import java.time.Instant;
+
+@Entity
+@Table(name = "device")
+public class Device {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "device_id", nullable = false, unique = true, length = 50)
+    private String deviceId;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DeviceStatus status = DeviceStatus.UNKNOWN;
+
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+    @Column(name = "interval_sec", nullable = false)
+    private Integer intervalSec = 5;
+
+    @Column(name = "last_seen_at")
+    private Instant lastSeenAt;
+
+    public Device() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public DeviceStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(DeviceStatus status) {
+        this.status = status;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public Integer getIntervalSec() {
+        return intervalSec;
+    }
+
+    public void setIntervalSec(Integer intervalSec) {
+        this.intervalSec = intervalSec;
+    }
+
+    public Instant getLastSeenAt() {
+        return lastSeenAt;
+    }
+
+    public void setLastSeenAt(Instant lastSeenAt) {
+        this.lastSeenAt = lastSeenAt;
+    }
+}

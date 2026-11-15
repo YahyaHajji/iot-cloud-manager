@@ -11,7 +11,7 @@ public class MqttSubscriberService {
 
     private MqttClient client;
     private static final String BROKER_URL = "tcp://localhost:1883";
-    private static final String CLIENT_ID = "iot-backend-1";
+    private static final String CLIENT_ID = "iot-cloud-manager-backend-02";
 
     @PostConstruct
     public void connectAndSubscribe() {
