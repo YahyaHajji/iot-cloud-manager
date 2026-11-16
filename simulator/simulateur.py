@@ -66,9 +66,19 @@ def telemetry_payload(device_id):
         "schemaVersion": 1,
         "messageId": str(uuid.uuid4()),
         "deviceId": device_id,
-        "temperature": round(random.uniform(18.0, 30.0), 1),
-        "humidity": round(random.uniform(35.0, 65.0), 1),
         "timestamp": utc_timestamp(),
+        "measurements": [
+            {
+                "type": "temperature",
+                "value": round(random.uniform(18.0, 30.0), 1),
+                "unit": "°C",
+            },
+            {
+                "type": "humidity",
+                "value": round(random.uniform(35.0, 65.0), 1),
+                "unit": "%",
+            },
+        ],
     }
 
 
