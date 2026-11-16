@@ -1,11 +1,5 @@
 # Contrat des messages MQTT – IoT Cloud Manager
 
-**Version du contrat :** 1 (proposition du 28 octobre, à valider par l'équipe)
-**Concerne :** Membre 1 (simulateurs Python), Membre 2 (backend Spring Boot), Membre 4 (configuration Mosquitto / ACL)
-Le frontend React ne parle jamais MQTT : il passe uniquement par l'API REST du backend.
-
----
-
 ## 1. Règles générales
 
 | Règle | Valeur |
@@ -55,9 +49,11 @@ Le frontend React ne parle jamais MQTT : il passe uniquement par l'API REST du b
   "schemaVersion": 1,
   "messageId": "3f1c9a2e-8b7d-4c1a-9e2f-1a2b3c4d5e6f",
   "deviceId": "sensor-room-01",
-  "temperature": 24.5,
-  "humidity": 52.0,
-  "timestamp": "2026-10-28T10:15:30Z"
+  "timestamp": "2026-10-28T10:15:30Z",
+  "measurements": [
+    { "type": "temperature", "value": 24.5, "unit": "°C" },
+    { "type": "humidity",    "value": 52.0, "unit": "%" }
+  ]
 }
 ```
 
@@ -67,10 +63,13 @@ Le frontend React ne parle jamais MQTT : il passe uniquement par l'API REST du b
 | `messageId` | chaîne (UUID v4) | oui | Identifiant unique du message, pour détecter les doublons |
 | `deviceId` | chaîne | oui | Identique au topic |
 | `timestamp` | chaîne ISO 8601 UTC | oui | Moment de la mesure (côté capteur) |
-| `temperature` | nombre | oui | Température en °C, plage -40 à 85 |
-| `humidity` | nombre | oui | Humidité en %, plage 0 à 100 |
+| `measurements` | tableau (1 à 10 éléments) | oui | Une entrée par grandeur mesurée |
+| `measurements[].type` | chaîne | oui | Voir le catalogue ci-dessous |
+| `measurements[].value` | nombre | oui | Valeur mesurée |
+| `measurements[].unit` | chaîne | oui | Doit correspondre à l'unité du catalogue |
 
-Les unités sont implicites dans les noms des champs : température en °C et humidité en %. Les types de mesure additionnels du catalogue ci-dessous ne font pas partie de cette télémétrie température/humidité.
+**Pourquoi un tableau `measurements` plutôt que `"temperature": 24.5` ?**
+Ajouter un nouveau type de capteur (compteur d'eau, CO2…) ne change ni le contrat, ni le code du backend, ni la base de données : il suffit d'ajouter une ligne au catalogue. Chaque entrée devient une ligne dans la table `measurement`.
 
 ### Catalogue des types de mesure
 
@@ -194,8 +193,9 @@ Pour chaque message reçu, le backend vérifie dans l'ordre :
 2. `schemaVersion` est supporté (`1`).
 3. Le `deviceId` du message est égal à celui du topic.
 4. Le capteur existe en base et est actif (section 6).
-5. Les champs `temperature` et `humidity` sont des nombres dans leurs plages respectives.
-6. Le `messageId` n'a pas déjà été enregistré (colonne `UNIQUE` en base) ; sinon le doublon est ignoré sans erreur.
+5. Les champs obligatoires sont présents et du bon type.
+6. Chaque `type` de mesure est dans le catalogue, avec la bonne `unit` et une valeur dans la plage.
+7. Le `messageId` n'a pas déjà été enregistré (contrainte `UNIQUE (message_id, type)` en base : un message contient plusieurs mesures, donc plusieurs lignes avec le même `message_id`) ; sinon le doublon est ignoré sans erreur.
 
 Tout message rejeté est logué avec sa raison et compté dans `mqtt_messages_rejected_total{reason=...}`, ce qui alimente directement Prometheus et Grafana (semaine 7).
 
@@ -239,7 +239,7 @@ Un capteur ne peut donc pas se faire passer pour un autre, ni envoyer de command
 
 | Message | Table(s) |
 |---|---|
-| `telemetry` | `measurement(id, device_id, message_id UNIQUE, type, value, unit, measured_at, received_at)` – deux mesures par message (`temperature` en °C et `humidity` en %) |
+| `telemetry` | `measurement(id, device_id, message_id, type, value, unit, measured_at, received_at)` avec `UNIQUE (message_id, type)` – une ligne par entrée de `measurements` |
 | `status` | `device.status`, `device.last_seen_at`, `device.interval_sec` |
 | `commands` / `ack` | `command(id, device_id, type, params, status, created_at, acknowledged_at)` |
 
@@ -249,10 +249,10 @@ Un capteur ne peut donc pas se faire passer pour un autre, ni envoyer de command
 
 | N° | Point | OK ? |
 |---|---|---|
-| 1 | Structure des topics `iot/devices/{deviceId}/...` | |
-| 2 | Télémétrie avec un tableau `measurements` et catalogue des types | |
-| 3 | QoS 1 partout, retain uniquement sur `status` | |
-| 4 | LWT + délai de 3 × `intervalSec` pour l'état hors ligne | |
-| 5 | Commandes `set_interval`, `enable`, `disable`, `ping` avec ack | |
-| 6 | Rejet des capteurs non déclarés | |
-| 7 | ACL Mosquitto proposée pour la semaine 5 | |
+| 1 | Structure des topics `iot/devices/{deviceId}/...` | OK |
+| 2 | Télémétrie avec un tableau `measurements` et catalogue des types | OK |
+| 3 | QoS 1 partout, retain uniquement sur `status` | OK |
+| 4 | LWT + délai de 3 × `intervalSec` pour l'état hors ligne | OK |
+| 5 | Commandes `set_interval`, `enable`, `disable`, `ping` avec ack | OK |
+| 6 | Rejet des capteurs non déclarés | OK |
+| 7 | ACL Mosquitto proposée pour la semaine 5 | OK |
