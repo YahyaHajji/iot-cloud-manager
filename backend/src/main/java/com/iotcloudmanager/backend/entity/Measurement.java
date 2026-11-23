@@ -7,6 +7,12 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
     name = "measurements",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_measurement_message_type",
+            columnNames = {"message_id", "type"}
+        )
+    },
     indexes = {
         @Index(name = "idx_measurement_device_date", columnList = "device_id, measured_at")
     }

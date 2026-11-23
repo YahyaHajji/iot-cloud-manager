@@ -12,8 +12,11 @@ public class MqttConfig {
     @Value("${mqtt.broker.url}")
     private String brokerUrl;
 
-    @Value("${mqtt.client.id}")
-    private String clientId;
+    @Value("${mqtt.username:}")
+    private String username;
+
+    @Value("${mqtt.password:}")
+    private String password;
 
     @Bean
     public MqttConnectOptions mqttConnectOptions() {
@@ -25,6 +28,16 @@ public class MqttConfig {
         options.setAutomaticReconnect(true);
         options.setConnectionTimeout(10);
         options.setKeepAliveInterval(30);
+        options.setMaxReconnectDelay(30000);
+
+        // Identifiants facultatifs :
+        // ils seront utilisés lorsque Mosquitto sera sécurisé.
+        if (username != null && !username.isBlank()) {
+            options.setUserName(username);
+            options.setPassword(
+                    password == null ? new char[0] : password.toCharArray()
+            );
+        }
 
         return options;
     }

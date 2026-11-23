@@ -14,9 +14,10 @@ import com.iotcloudmanager.backend.repository.ProcessedMessageRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.ZoneOffset;
+
 
 @Service
 public class TelemetryService {
@@ -25,67 +26,88 @@ public class TelemetryService {
     private final MeasurementRepository measurementRepository;
     private final MeasurementTypeRepository measurementTypeRepository;
     private final ProcessedMessageRepository processedMessageRepository;
+    private final AlertService alertService;
 
     public TelemetryService(
             DeviceRepository deviceRepository,
             MeasurementRepository measurementRepository,
             MeasurementTypeRepository measurementTypeRepository,
-            ProcessedMessageRepository processedMessageRepository
-    ) {
+            ProcessedMessageRepository processedMessageRepository,
+            AlertService alertService) {
         this.deviceRepository = deviceRepository;
         this.measurementRepository = measurementRepository;
         this.measurementTypeRepository = measurementTypeRepository;
         this.processedMessageRepository = processedMessageRepository;
+        this.alertService = alertService;
     }
 
     @Transactional
     public String processTelemetry(String topicDeviceId, TelemetryMessage message) {
 
-        // 1. Vérifier la version du schéma
+        if (message == null) {
+            throw new IllegalArgumentException("Message de télémétrie absent");
+        }
+
         if (message.getSchemaVersion() == null
                 || message.getSchemaVersion() != 1) {
             throw new IllegalArgumentException("Version du schéma invalide");
         }
 
-        // 2. Vérifier que le deviceId correspond au topic MQTT
-        if (!topicDeviceId.equals(message.getDeviceId())) {
+        if (topicDeviceId == null
+                || message.getDeviceId() == null
+                || !topicDeviceId.equals(message.getDeviceId())) {
             throw new IllegalArgumentException(
-                    "Le deviceId ne correspond pas au topic MQTT"
-            );
+                    "Le deviceId ne correspond pas au topic MQTT");
         }
 
-        // 3. Vérifier que l'appareil existe
+        if (message.getMessageId() == null || message.getMessageId().isBlank()) {
+            throw new IllegalArgumentException("messageId invalide");
+        }
+
+        if (message.getTimestamp() == null) {
+            throw new IllegalArgumentException("Timestamp manquant");
+        }
+
+        if (message.getMeasurements() == null
+                || message.getMeasurements().isEmpty()
+                || message.getMeasurements().size() > 10) {
+            throw new IllegalArgumentException(
+                    "Le message doit contenir entre 1 et 10 mesures");
+        }
+
         Device device = deviceRepository.findByDeviceId(topicDeviceId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Appareil non enregistré")
-                );
+                        new IllegalArgumentException("Appareil non enregistré"));
 
         if (!device.isEnabled()) {
             throw new IllegalArgumentException("Appareil désactivé");
         }
 
-        // 4. Ignorer les messages déjà traités
         if (processedMessageRepository.existsByMessageId(message.getMessageId())) {
             return "Message déjà traité";
         }
 
-        // 5. Vérifier toutes les mesures AVANT de les enregistrer
-        List<MeasurementType> types = new ArrayList<>();
 
         for (MeasurementInput input : message.getMeasurements()) {
+
+            if (input == null
+                    || input.getType() == null
+                    || input.getType().isBlank()
+                    || input.getUnit() == null
+                    || input.getUnit().isBlank()) {
+                throw new IllegalArgumentException("Champs de mesure invalides");
+            }
 
             MeasurementType type = measurementTypeRepository
                     .findByTypeAndEnabledTrue(input.getType())
                     .orElseThrow(() ->
                             new IllegalArgumentException(
-                                    "Type de mesure non autorisé : " + input.getType()
-                            )
-                    );
+                                    "Type de mesure inconnu ou désactivé : "
+                                            + input.getType()));
 
             if (!type.getUnit().equals(input.getUnit())) {
                 throw new IllegalArgumentException(
-                        "Unité incorrecte pour " + input.getType()
-                );
+                        "Unité incorrecte pour " + input.getType());
             }
 
             Double value = input.getValue();
@@ -94,55 +116,56 @@ public class TelemetryService {
                 throw new IllegalArgumentException("Valeur de mesure invalide");
             }
 
-            if (type.getMinValue() != null
-                    && value < type.getMinValue()) {
+            if (type.getMinValue() != null && value < type.getMinValue()) {
                 throw new IllegalArgumentException(
-                        "Valeur inférieure à la limite autorisée pour " + input.getType()
-                );
+                        "Valeur inférieure à la limite autorisée pour "
+                                + input.getType());
             }
 
-            if (type.getMaxValue() != null
-                    && value > type.getMaxValue()) {
+            if (type.getMaxValue() != null && value > type.getMaxValue()) {
                 throw new IllegalArgumentException(
-                        "Valeur supérieure à la limite autorisée pour " + input.getType()
-                );
+                        "Valeur supérieure à la limite autorisée pour "
+                                + input.getType());
             }
 
-            types.add(type);
+            
         }
 
-        // 6. Enregistrer les mesures après validation complète
-        LocalDateTime receivedAt = LocalDateTime.now();
+        LocalDateTime measuredAt = LocalDateTime.ofInstant(
+                message.getTimestamp(), ZoneOffset.UTC);
 
-        for (int i = 0; i < message.getMeasurements().size(); i++) {
+        LocalDateTime receivedAt = LocalDateTime.ofInstant(
+                Instant.now(), ZoneOffset.UTC);
 
-            MeasurementInput input = message.getMeasurements().get(i);
+        for (MeasurementInput input : message.getMeasurements()) {
 
             Measurement measurement = new Measurement();
-
             measurement.setDevice(device);
             measurement.setMessageId(message.getMessageId());
             measurement.setType(input.getType());
             measurement.setValue(input.getValue());
             measurement.setUnit(input.getUnit());
-            measurement.setMeasuredAt(message.getTimestamp());
+            measurement.setMeasuredAt(measuredAt);
             measurement.setReceivedAt(receivedAt);
 
             measurementRepository.save(measurement);
+
+            alertService.checkMeasurement(
+                    device,
+                    input.getType(),
+                    input.getValue(),
+                    input.getUnit());
         }
 
-        // 7. Enregistrer l'identifiant du message traité
         ProcessedMessage processedMessage = new ProcessedMessage();
-
         processedMessage.setMessageId(message.getMessageId());
         processedMessage.setDeviceId(message.getDeviceId());
         processedMessage.setProcessedAt(receivedAt);
 
         processedMessageRepository.save(processedMessage);
 
-        // 8. Mettre à jour l'état de l'appareil
         device.setStatus(DeviceStatus.ONLINE);
-        device.setLastSeenAt(java.time.Instant.now());
+        device.setLastSeenAt(Instant.now());
 
         deviceRepository.save(device);
 

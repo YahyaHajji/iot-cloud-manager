@@ -30,6 +30,9 @@ public class Device {
     @Column(name = "last_seen_at")
     private Instant lastSeenAt;
 
+    @Column(length = 100)
+    private String firmware;
+
     public Device() {
     }
 
@@ -83,5 +86,13 @@ public class Device {
 
     public void setLastSeenAt(Instant lastSeenAt) {
         this.lastSeenAt = lastSeenAt;
+    }
+
+    public String getFirmware() {
+        return firmware;
+    }
+
+    public void setFirmware(String firmware) {
+        this.firmware = firmware;
     }
 }
