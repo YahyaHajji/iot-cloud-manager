@@ -1,40 +1,79 @@
-# Base de départ : broker MQTT et base de données.
-# Le backend et le frontend seront ajoutés dans les semaines suivantes.
+
 services:
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: iot-mosquitto
     restart: unless-stopped
     ports:
-      - "1883:1883"
+      - "127.0.0.1:1883:1883"
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-      - mosquitto_data:/mosquitto/data
-
-  simulator:
-    build:
-      context: ..
-      dockerfile: simulator/Dockerfile
-    container_name: iot-simulator
-    restart: unless-stopped
-    depends_on:
-      - mosquitto
-    environment:
-      MQTT_HOST: mosquitto
-      MQTT_PORT: "1883"
-      HEARTBEAT_INTERVAL_SEC: ${HEARTBEAT_INTERVAL_SEC:-30}
-      SIMULATOR_SENSORS: ${SIMULATOR_SENSORS:-}
-
+      - ./mosquitto/acl:/mosquitto/config/acl:ro
+      - ./mosquitto/passwordfile:/mosquitto/config/passwordfile:ro
+      - backend_mosquitto_data:/mosquitto/data
   postgres:
     image: postgres:16
     container_name: iot-postgres
     restart: unless-stopped
     env_file: .env
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - iot_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: iot-backend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      MQTT_ENABLED: "true"
+      MQTT_URL: tcp://mosquitto:1883
+      MQTT_CLIENT_ID: iot-backend-1
+      MQTT_USERNAME: ${MQTT_USERNAME}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: "3600000"
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_DATA_MODE: api
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    container_name: iot-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
 
 volumes:
-  mosquitto_data:
-  postgres_data:
+  iot_postgres_data:
+    name: iot_postgres_data
+  backend_mosquitto_data:
+    name: backend_mosquitto-data

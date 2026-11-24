@@ -1,0 +1,8 @@
+# Capteurs : chaque utilisateur ne peut écrire que dans ses propres topics.
+pattern write iot/devices/%u/#
+pattern read iot/devices/%u/commands
+
+# Le backend lit les topics des capteurs et peut publier des commandes.
+user iot-backend
+topic read iot/devices/#
+topic write iot/devices/+/commands
