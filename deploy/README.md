@@ -108,3 +108,43 @@ http://localhost:9090/targets pour vérifier que la cible `iot-backend` est `UP`
 ```sh
 docker compose up -d prometheus grafana
 ```
+
+## Simulateur de capteurs
+
+Le service `simulator` publie la télémétrie de capteurs fictifs sur Mosquitto,
+dans le réseau Docker (`MQTT_HOST=mosquitto`). Chaque capteur se connecte avec
+son `deviceId` comme nom d'utilisateur MQTT.
+
+### Avant de le démarrer
+
+1. Créez chaque capteur dans le `passwordfile` de Mosquitto, avec un mot de
+   passe différent :
+
+   ```sh
+   mosquitto_passwd -b ./mosquitto/passwordfile sensor-room-01 <mot-de-passe-1>
+   mosquitto_passwd -b ./mosquitto/passwordfile sensor-room-02 <mot-de-passe-2>
+   docker compose restart mosquitto
+   ```
+
+2. Enregistrez les mêmes capteurs dans le backend (`POST /api/devices` ou
+   l'écran Capteurs). Le backend rejette les mesures d'un capteur inconnu.
+3. Dans `deploy/.env`, renseignez `SIMULATOR_SENSORS` avec les mêmes mots de
+   passe, sur une seule ligne.
+
+### Démarrer et vérifier
+
+```sh
+docker compose up -d --build simulator
+docker compose logs -f simulator
+```
+
+Chaque capteur doit afficher `connected`. Si le journal indique
+`Connection rejected`, le mot de passe du `passwordfile` et celui de
+`SIMULATOR_SENSORS` ne correspondent pas.
+
+### Démonstration des alertes
+
+Pour provoquer des alertes, définissez `ANOMALY_EVERY_N=5` dans `deploy/.env`
+puis `docker compose up -d simulator`. Une température de 45 °C est envoyée
+toutes les 5 mesures. Créez d'abord un seuil sur `temperature` pour le capteur
+(`POST /api/alerts/thresholds`).
