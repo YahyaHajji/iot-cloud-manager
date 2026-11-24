@@ -45,6 +45,10 @@ export const mockMeasurements=mockDevices.flatMap((d,i)=>Array.from({length:8},(
     return {type,value,unit:catalogue[type].unit}
   })}
 }))
+mockDevices.forEach(device => {
+  const latest = [...mockMeasurements].filter(row => row.deviceId === device.deviceId).sort((a,b) => b.timestamp.localeCompare(a.timestamp))[0]
+  device.lastMeasurements = latest?.measurements.map(measurement => ({ ...measurement, timestamp: latest.timestamp })) ?? []
+})
 export const mockAlerts=[
  {id:1,deviceId:'sensor-room-01',severity:'warning',title:'Température élevée',detail:'31 °C · Seuil 27 °C',time:'Il y a 12 min',state:'active'},
  {id:2,deviceId:'sensor-co2-02',severity:'danger',title:'CO₂ élevé',detail:'1 250 ppm · Seuil 1 000 ppm',time:'Il y a 28 min',state:'active'},
