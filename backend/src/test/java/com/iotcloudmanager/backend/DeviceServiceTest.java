@@ -2,9 +2,11 @@
 package com.iotcloudmanager.backend;
 
 import com.iotcloudmanager.backend.dto.DeviceRequest;
+import com.iotcloudmanager.backend.dto.DeviceResponse;
 import com.iotcloudmanager.backend.entity.Device;
 import com.iotcloudmanager.backend.entity.DeviceStatus;
 import com.iotcloudmanager.backend.repository.DeviceRepository;
+import com.iotcloudmanager.backend.repository.MeasurementRepository;
 import com.iotcloudmanager.backend.service.DeviceService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +17,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -27,6 +28,9 @@ class DeviceServiceTest {
 
     @Mock
     private DeviceRepository deviceRepository;
+
+    @Mock
+    private MeasurementRepository measurementRepository;
 
     @InjectMocks
     private DeviceService deviceService;
@@ -40,6 +44,8 @@ class DeviceServiceTest {
         request.setDeviceId("sensor-001");
         request.setName("Capteur température");
         request.setIntervalSec(60);
+        request.setLocation("Salle serveur");
+        request.setDescription("Capteur de température");
 
         device = new Device();
         device.setDeviceId("sensor-001");
@@ -47,12 +53,15 @@ class DeviceServiceTest {
         device.setIntervalSec(60);
         device.setEnabled(true);
         device.setStatus(DeviceStatus.UNKNOWN);
+        device.setLocation("Salle serveur");
+        device.setDescription("Capteur de température");
     }
 
     @Test
     void shouldCreateDevice() {
         when(deviceRepository.existsByDeviceId("sensor-001"))
                 .thenReturn(false);
+
         when(deviceRepository.save(any(Device.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -63,6 +72,8 @@ class DeviceServiceTest {
         assertEquals(60, result.getIntervalSec());
         assertTrue(result.isEnabled());
         assertEquals(DeviceStatus.UNKNOWN, result.getStatus());
+        assertEquals("Salle serveur", result.getLocation());
+        assertEquals("Capteur de température", result.getDescription());
 
         verify(deviceRepository).save(any(Device.class));
     }
@@ -81,9 +92,27 @@ class DeviceServiceTest {
     @Test
     void shouldGetAllDevices() {
         when(deviceRepository.findAll())
-                .thenReturn(Arrays.asList(device, new Device()));
+                .thenReturn(Collections.singletonList(device));
 
-        assertEquals(2, deviceService.getAllDevices().size());
+        when(measurementRepository
+                .findByDeviceDeviceIdOrderByMeasuredAtDesc("sensor-001"))
+                .thenReturn(Collections.emptyList());
+
+        var result = deviceService.getAllDevices();
+
+        assertEquals(1, result.size());
+
+        DeviceResponse response = result.get(0);
+
+        assertEquals("sensor-001", response.getDeviceId());
+        assertEquals("Salle serveur", response.getLocation());
+        assertEquals("Capteur de température", response.getDescription());
+        assertNotNull(response.getLastMeasurements());
+        assertTrue(response.getLastMeasurements().isEmpty());
+
+        verify(deviceRepository).findAll();
+        verify(measurementRepository)
+                .findByDeviceDeviceIdOrderByMeasuredAtDesc("sensor-001");
     }
 
     @Test
@@ -108,15 +137,21 @@ class DeviceServiceTest {
     @Test
     void shouldUpdateDevice() {
         request.setName("Capteur modifié");
+        request.setLocation("Nouveau local");
+        request.setDescription("Description modifiée");
 
         when(deviceRepository.findById(1L))
                 .thenReturn(Optional.of(device));
+
         when(deviceRepository.save(any(Device.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Device result = deviceService.updateDevice(1L, request);
 
         assertEquals("Capteur modifié", result.getName());
+        assertEquals("Nouveau local", result.getLocation());
+        assertEquals("Description modifiée", result.getDescription());
+
         verify(deviceRepository).save(device);
     }
 
@@ -124,6 +159,7 @@ class DeviceServiceTest {
     void shouldDisableDevice() {
         when(deviceRepository.findById(1L))
                 .thenReturn(Optional.of(device));
+
         when(deviceRepository.save(any(Device.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -139,6 +175,7 @@ class DeviceServiceTest {
 
         when(deviceRepository.findById(1L))
                 .thenReturn(Optional.of(device));
+
         when(deviceRepository.save(any(Device.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 

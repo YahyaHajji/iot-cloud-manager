@@ -14,27 +14,21 @@ public class DeviceRequest {
     @Min(1)
     private Integer intervalSec = 60;
 
-    public String getDeviceId() {
-        return deviceId;
-    }
+    private String location;
+    private String description;
 
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
-    }
+    public String getDeviceId() { return deviceId; }
+    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public Integer getIntervalSec() { return intervalSec; }
+    public void setIntervalSec(Integer intervalSec) { this.intervalSec = intervalSec; }
 
-    public Integer getIntervalSec() {
-        return intervalSec;
-    }
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
-    public void setIntervalSec(Integer intervalSec) {
-        this.intervalSec = intervalSec;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 }

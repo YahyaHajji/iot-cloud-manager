@@ -33,66 +33,41 @@ public class Device {
     @Column(length = 100)
     private String firmware;
 
+    @Column(columnDefinition = "TEXT")
+    private String location;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     public Device() {
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
 
-    public String getDeviceId() {
-        return deviceId;
-    }
+    public String getDeviceId() { return deviceId; }
+    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
 
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public DeviceStatus getStatus() { return status; }
+    public void setStatus(DeviceStatus status) { this.status = status; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
-    public DeviceStatus getStatus() {
-        return status;
-    }
+    public Integer getIntervalSec() { return intervalSec; }
+    public void setIntervalSec(Integer intervalSec) { this.intervalSec = intervalSec; }
 
-    public void setStatus(DeviceStatus status) {
-        this.status = status;
-    }
+    public Instant getLastSeenAt() { return lastSeenAt; }
+    public void setLastSeenAt(Instant lastSeenAt) { this.lastSeenAt = lastSeenAt; }
 
-    public boolean isEnabled() {
-        return enabled;
-    }
+    public String getFirmware() { return firmware; }
+    public void setFirmware(String firmware) { this.firmware = firmware; }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
-    public Integer getIntervalSec() {
-        return intervalSec;
-    }
-
-    public void setIntervalSec(Integer intervalSec) {
-        this.intervalSec = intervalSec;
-    }
-
-    public Instant getLastSeenAt() {
-        return lastSeenAt;
-    }
-
-    public void setLastSeenAt(Instant lastSeenAt) {
-        this.lastSeenAt = lastSeenAt;
-    }
-
-    public String getFirmware() {
-        return firmware;
-    }
-
-    public void setFirmware(String firmware) {
-        this.firmware = firmware;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 }
