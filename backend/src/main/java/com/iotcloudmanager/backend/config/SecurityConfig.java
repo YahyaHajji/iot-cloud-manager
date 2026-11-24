@@ -102,7 +102,8 @@ public class SecurityConfig {
                 // Santé publique
                 .requestMatchers(
                         "/actuator/health",
-                        "/actuator/health/**"
+                        "/actuator/health/**",
+                        "/actuator/prometheus"
                 ).permitAll()
 
                 // Gestion des utilisateurs : ADMIN uniquement
@@ -128,7 +129,6 @@ public class SecurityConfig {
                 ).hasAnyRole("ADMIN", "USER")
 
                 // Supervision
-                .requestMatchers("/actuator/prometheus").hasRole("ADMIN")
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
 
                 // Toutes les autres routes API : ADMIN
