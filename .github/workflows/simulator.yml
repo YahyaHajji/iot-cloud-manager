@@ -2,14 +2,8 @@ name: Simulateur
 
 on:
   pull_request:
-    paths:
-      - "simulator/**"
-      - ".github/workflows/simulator.yml"
   push:
     branches: [master]
-    paths:
-      - "simulator/**"
-      - ".github/workflows/simulator.yml"
 
 jobs:
   test:
