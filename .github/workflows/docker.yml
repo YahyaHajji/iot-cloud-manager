@@ -6,6 +6,7 @@ on:
       - "backend/**"
       - "frontend/**"
       - "deploy/**"
+      - "simulator/**"
       - ".github/workflows/docker.yml"
 
 jobs:
@@ -21,6 +22,9 @@ jobs:
 
       - name: Image du frontend
         run: docker build -t iot-frontend:ci frontend
+
+      - name: Image du simulateur
+        run: docker build -f simulator/Dockerfile -t iot-simulator:ci .
 
       - name: Valider le fichier Compose
         working-directory: deploy

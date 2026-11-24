@@ -72,6 +72,21 @@ services:
     depends_on:
       - backend
 
+  simulator:
+    build:
+      context: ..
+      dockerfile: simulator/Dockerfile
+    container_name: iot-simulator
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      SIMULATOR_SENSORS: ${SIMULATOR_SENSORS}
+      HEARTBEAT_INTERVAL_SEC: ${HEARTBEAT_INTERVAL_SEC:-30}
+      ANOMALY_EVERY_N: ${ANOMALY_EVERY_N:-0}
+    depends_on:
+      - mosquitto
+
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: iot-prometheus
