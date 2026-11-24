@@ -81,3 +81,30 @@ docker compose up -d --build frontend
 
 Si le nom de domaine change, modifiez `frontend/nginx.conf` (`server_name` et
 chemins des certificats) puis reconstruisez le conteneur.
+
+## Supervision : Prometheus et Grafana
+
+Prometheus lit les métriques du backend toutes les 15 secondes
+(`backend:8080/actuator/prometheus`, sur le réseau Docker interne) et les garde
+15 jours. Grafana affiche le tableau de bord « IoT Cloud Manager - Backend »
+(état du backend, mémoire, CPU, requêtes HTTP, connexions à la base, messages
+MQTT rejetés), chargé automatiquement depuis `deploy/grafana/`.
+
+Les deux services sont liés à `127.0.0.1` : ils ne sont pas accessibles depuis
+Internet, et Nginx bloque `/actuator/`. Définissez `GRAFANA_ADMIN_PASSWORD`
+dans `deploy/.env`.
+
+### Accéder à Grafana depuis votre ordinateur
+
+```sh
+ssh -i <cle>.key -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 ubuntu@<adresse-ip-de-la-vm>
+```
+
+Puis ouvrez http://localhost:3000 (utilisateur `admin`) pour Grafana et
+http://localhost:9090/targets pour vérifier que la cible `iot-backend` est `UP`.
+
+### Démarrer
+
+```sh
+docker compose up -d prometheus grafana
+```
