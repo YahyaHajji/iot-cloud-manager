@@ -4,6 +4,7 @@ package com.iotcloudmanager.backend;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iotcloudmanager.backend.controller.DeviceController;
 import com.iotcloudmanager.backend.dto.DeviceRequest;
+import com.iotcloudmanager.backend.dto.DeviceResponse;
 import com.iotcloudmanager.backend.entity.Device;
 import com.iotcloudmanager.backend.entity.DeviceStatus;
 import com.iotcloudmanager.backend.service.DeviceService;
@@ -52,16 +53,27 @@ class DeviceControllerTest {
         device.setIntervalSec(60);
         device.setEnabled(true);
         device.setStatus(DeviceStatus.ONLINE);
+        device.setLocation("Salle serveur");
+        device.setDescription("Capteur de température");
     }
 
     @Test
     void shouldGetAllDevices() throws Exception {
+
+        DeviceResponse response =
+                DeviceResponse.from(device, Collections.emptyList());
+
         when(deviceService.getAllDevices())
-                .thenReturn(Collections.singletonList(device));
+                .thenReturn(Collections.singletonList(response));
 
         mockMvc.perform(get("/api/devices"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].deviceId").value("sensor-001"));
+                .andExpect(jsonPath("$[0].deviceId").value("sensor-001"))
+                .andExpect(jsonPath("$[0].location").value("Salle serveur"))
+                .andExpect(jsonPath("$[0].description")
+                        .value("Capteur de température"))
+                .andExpect(jsonPath("$[0].lastMeasurements").isArray())
+                .andExpect(jsonPath("$[0].lastMeasurements").isEmpty());
     }
 
     @Test
@@ -82,12 +94,17 @@ class DeviceControllerTest {
         request.setDeviceId("sensor-001");
         request.setName("Capteur température");
         request.setIntervalSec(60);
+        request.setLocation("Salle serveur");
+        request.setDescription("Capteur de température");
 
         mockMvc.perform(post("/api/devices")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.deviceId").value("sensor-001"));
+                .andExpect(jsonPath("$.deviceId").value("sensor-001"))
+                .andExpect(jsonPath("$.location").value("Salle serveur"))
+                .andExpect(jsonPath("$.description")
+                        .value("Capteur de température"));
     }
 
     @Test
@@ -99,6 +116,8 @@ class DeviceControllerTest {
         request.setDeviceId("sensor-001");
         request.setName("Capteur modifié");
         request.setIntervalSec(60);
+        request.setLocation("Salle serveur");
+        request.setDescription("Capteur de température");
 
         mockMvc.perform(put("/api/devices/1")
                 .contentType(MediaType.APPLICATION_JSON)

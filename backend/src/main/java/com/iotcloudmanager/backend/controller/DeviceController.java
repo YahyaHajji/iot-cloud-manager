@@ -1,9 +1,10 @@
-
 package com.iotcloudmanager.backend.controller;
 
 import com.iotcloudmanager.backend.dto.DeviceRequest;
+import com.iotcloudmanager.backend.dto.DeviceResponse;
 import com.iotcloudmanager.backend.entity.Device;
 import com.iotcloudmanager.backend.service.DeviceService;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,7 @@ public class DeviceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Device>> getAllDevices() {
+    public ResponseEntity<List<DeviceResponse>> getAllDevices() {
         return ResponseEntity.ok(deviceService.getAllDevices());
     }
 
