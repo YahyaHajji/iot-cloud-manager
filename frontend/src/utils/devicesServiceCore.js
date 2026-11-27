@@ -7,7 +7,11 @@ export const adaptDevicePayload = ({ deviceId, name, intervalSec, location, desc
 export function createDevicesService({ mode = 'mock', api, seed = [] }) {
   let memory = seed.map((device, index) => ({ id: index + 1, ...device }))
   const path = '/api/devices'
-  const copy = value => ({ ...value, lastMeasurements: [...(value.lastMeasurements ?? [])] })
+  const copy = value => ({
+    ...value,
+    measurementTypes: [...(value.measurementTypes ?? [])],
+    lastMeasurements: (value.lastMeasurements ?? []).map(measurement => ({ ...measurement })),
+  })
   return {
     mode,
     async list() { return mode === 'api' ? (await api.get(path)).data.map(adaptDevice) : memory.map(copy) },
@@ -15,7 +19,7 @@ export function createDevicesService({ mode = 'mock', api, seed = [] }) {
       const body = adaptDevicePayload(data)
       if (mode === 'api') return adaptDevice((await api.post(path, body)).data)
       if (memory.some(device => device.deviceId === body.deviceId)) throw Object.assign(new Error('Cet identifiant existe déjà.'), { status: 409 })
-      const row = adaptDevice({ ...body, id: Math.max(0, ...memory.map(x => Number(x.id) || 0)) + 1, status: 'unknown', enabled: data.enabled ?? true, firmware: 'sim-1.0.0', lastSeenAt: null, lastMeasurements: [] })
+      const row = adaptDevice({ ...body, id: Math.max(0, ...memory.map(x => Number(x.id) || 0)) + 1, status: 'unknown', enabled: data.enabled ?? true, firmware: 'sim-1.0.0', measurementTypes: data.measurementTypes ?? [], lastSeenAt: null, lastMeasurements: [] })
       memory = [row, ...memory]; return copy(row)
     },
     async update(id, data) {

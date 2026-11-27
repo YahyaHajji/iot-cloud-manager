@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "./auth";
-import { devicesService, apiErrorMessage } from "./servicesLayer";
+import { dataMode, apiErrorMessage } from "./servicesLayer";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -14,7 +14,7 @@ export default function Login() {
     setBusy(true);
     setError("");
     try {
-      await login(username, password, devicesService.mode);
+      await login(username, password);
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -52,7 +52,7 @@ export default function Login() {
         <button className="button primary" disabled={busy}>
           {busy ? "Connexion…" : "Se connecter"}
         </button>
-        {devicesService.mode === "mock" && (
+        {dataMode === "mock" && (
           <small>
             Mode démo : utilisez un nom d’utilisateur et un mot de passe de
             votre choix.

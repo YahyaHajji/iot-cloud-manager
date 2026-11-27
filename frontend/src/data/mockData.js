@@ -38,7 +38,7 @@ export const mockDevices = seed.map(([deviceId,name,location,types,enabled,inter
 const uuid=()=>crypto.randomUUID()
 export const mockMeasurements=mockDevices.flatMap((d,i)=>Array.from({length:8},(_,j)=>{
   const timestamp=new Date(Date.now()-(7-j)*3600000-i*13000).toISOString()
-  return {schemaVersion:1,messageId:uuid(),deviceId:d.deviceId,timestamp,measurements:d.measurementTypes.map(type=>{
+  return {id:i*8+j+1,schemaVersion:1,messageId:uuid(),deviceId:d.deviceId,timestamp,measurements:d.measurementTypes.map(type=>{
     const ranges={temperature:[19,34],humidity:[35,72],pressure:[990,1035],co2:[420,1250],water_volume:[15,140],presence:[0,1]}
     const [min,max]=ranges[type];let value=+(min+((i*17+j*13)%100)/100*(max-min)).toFixed(type==='water_volume'?1:1)
     if(type==='temperature'&&i===0&&j===6)value=31
@@ -50,8 +50,8 @@ mockDevices.forEach(device => {
   device.lastMeasurements = latest?.measurements.map(measurement => ({ ...measurement, timestamp: latest.timestamp })) ?? []
 })
 export const mockAlerts=[
- {id:1,deviceId:'sensor-room-01',severity:'warning',title:'Température élevée',detail:'31 °C · Seuil 27 °C',time:'Il y a 12 min',state:'active'},
- {id:2,deviceId:'sensor-co2-02',severity:'danger',title:'CO₂ élevé',detail:'1 250 ppm · Seuil 1 000 ppm',time:'Il y a 28 min',state:'active'},
- {id:3,deviceId:'sensor-room-05',severity:'info',title:'Capteur hors ligne',detail:'Aucune communication récente',time:'Il y a 1 h',state:'active'},
- {id:4,deviceId:'sensor-greenhouse-02',severity:'warning',title:'Humidité basse',detail:'36 % · Seuil 40 %',time:'Il y a 2 h',state:'resolved'},
+ {id:1,deviceId:'sensor-room-01',type:'temperature',value:31,unit:'°C',severity:'WARNING',triggeredAt:new Date(Date.now()-12*60000).toISOString()},
+ {id:2,deviceId:'sensor-co2-02',type:'co2',value:1250,unit:'ppm',severity:'WARNING',triggeredAt:new Date(Date.now()-28*60000).toISOString()},
+ {id:3,deviceId:'sensor-room-05',type:'temperature',value:34,unit:'°C',severity:'WARNING',triggeredAt:new Date(Date.now()-60*60000).toISOString()},
+ {id:4,deviceId:'sensor-greenhouse-02',type:'humidity',value:36,unit:'%',severity:'WARNING',triggeredAt:new Date(Date.now()-120*60000).toISOString()},
 ]

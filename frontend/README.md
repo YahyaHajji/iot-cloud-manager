@@ -1,36 +1,60 @@
-﻿# IoT Cloud Manager — frontend
+# IoT Cloud Manager — frontend
 
-Interface React/Vite en français pour superviser le parc de capteurs IoT
-.Le frontend utilise les types, unités, plages, statuts et la forme de télémétrie de `../CONTRAT_MQTT.md`.
+Interface React/Vite en français pour superviser un parc de capteurs IoT.
 
-## Installation et lancement
+## Installation
 
 ```sh
 cd frontend
 npm install
-Copy-Item .env.example .env
+```
+
+`frontend/.env.example` garde `VITE_DATA_MODE=api` et `VITE_API_BASE_URL=http://localhost:8080`. Copiez-le vers `.env`, puis choisissez le mode voulu avant de démarrer Vite.
+
+### Mode API (par défaut)
+
+```env
+VITE_DATA_MODE=api
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+Démarrez le Backend Spring Boot, puis lancez le frontend :
+
+```sh
 npm run dev
 ```
-Scripts disponibles : `npm run dev`, `npm run build`, `npm run lint`, `npm test`, `npm run preview`.
+
+Connectez-vous avec un compte enregistré dans le Backend. Les appels API utilisent le jeton JWT de cette session.
+
+### Mode démonstration sans Backend
+
+Dans `.env`, définissez :
+
+```env
+VITE_DATA_MODE=mock
+```
+
+Puis démarrez `npm run dev`. À l’écran de connexion, `demo` comme nom d’utilisateur et `demo` comme mot de passe fonctionnent ; en mode mock, n’importe quelles valeurs non vides conviennent. Les capteurs, mesures et alertes sont simulés localement, et les opérations de capteurs modifient l’état en mémoire. Ce mode n’envoie aucune requête au Backend.
+
+Le mode est choisi au démarrage/à la compilation : après toute modification de `VITE_DATA_MODE`, redémarrez Vite. Pour une version compilée, relancez `npm run build` et redéployez les fichiers générés.
+
+Le mode API est la valeur par défaut. Une erreur réseau ou Backend ne bascule jamais automatiquement l’application en mode mock.
 
 ## Routes
 
-- `/dashboard` — indicateurs calculés, historique, états, alertes et mesures récentes.
-- `/capteurs` — inventaire paginé, recherche et filtres, ajout et modification.
-- `/appareils` — informations techniques des mêmes appareils.
-- `/alertes` — alertes d’exemple valides selon le catalogue MQTT.
-- `/donnees` — historique filtrable et graphique par grandeur (une unité par axe).
+- `/dashboard` — statistiques, historique des mesures, état des capteurs, alertes et dernières mesures.
+- `/capteurs` — inventaire, recherche et filtres, ajout, modification, suppression et activation.
+- `/appareils` — informations techniques des capteurs.
+- `/alertes` — historique des alertes.
+- `/donnees` — historique filtrable et graphiques par grandeur.
 - Toute route inconnue affiche la page 404.
 
-## Contrat REST attendu
+## Scripts
 
-```text
-GET    /api/devices
-GET    /api/devices/{deviceId}
-POST   /api/devices
-PUT    /api/devices/{deviceId}
+```sh
+npm run dev
+npm run lint
+npm run build
+npm test
+npm run preview
 ```
-
-## Vérifications
-
-`npm test` couvre la validation du formulaire et les opérations mock/API du service (5 tests). `npm run lint` et `npm run build` passent. Le build signale un bundle JavaScript supérieur à 500 kB, principalement dû aux graphiques Recharts. Les cinq chemins applicatifs et une route inconnue ont répondu via le serveur Vite. L’API Spring Boot et la persistance PostgreSQL n’ont pas été vérifiées, car aucun backend n’est présent dans le workspace.
