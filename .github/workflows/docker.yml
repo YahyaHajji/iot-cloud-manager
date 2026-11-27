@@ -1,0 +1,27 @@
+name: Images Docker
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    name: Construire les images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Vérifie que le Dockerfile fonctionne sur un clone propre (sans target/)
+      - name: Image du backend
+        run: docker build -t iot-backend:ci backend
+
+      - name: Image du frontend
+        run: docker build -t iot-frontend:ci frontend
+
+      - name: Image du simulateur
+        run: docker build -f simulator/Dockerfile -t iot-simulator:ci .
+
+      - name: Valider le fichier Compose
+        working-directory: deploy
+        run: |
+          cp .env.example .env
+          docker compose config --quiet

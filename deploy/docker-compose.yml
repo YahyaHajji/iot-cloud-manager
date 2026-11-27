@@ -1,16 +1,16 @@
-# Base de départ : broker MQTT et base de données.
-# Le backend et le frontend seront ajoutés dans les semaines suivantes.
+
 services:
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: iot-mosquitto
     restart: unless-stopped
     ports:
-      - "1883:1883"
+      - "127.0.0.1:1883:1883"
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-      - mosquitto_data:/mosquitto/data
-
+      - ./mosquitto/acl:/mosquitto/config/acl:ro
+      - ./mosquitto/passwordfile:/mosquitto/config/passwordfile:ro
+      - backend_mosquitto_data:/mosquitto/data
   postgres:
     image: postgres:16
     container_name: iot-postgres
@@ -19,8 +19,112 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - iot_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: iot-backend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      MQTT_ENABLED: "true"
+      MQTT_URL: tcp://mosquitto:1883
+      MQTT_CLIENT_ID: iot-backend-1
+      MQTT_USERNAME: ${MQTT_USERNAME}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: "3600000"
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_DATA_MODE: api
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    container_name: iot-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+
+  simulator:
+    build:
+      context: ..
+      dockerfile: simulator/Dockerfile
+    container_name: iot-simulator
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      SIMULATOR_SENSORS: ${SIMULATOR_SENSORS}
+      HEARTBEAT_INTERVAL_SEC: ${HEARTBEAT_INTERVAL_SEC:-30}
+      ANOMALY_EVERY_N: ${ANOMALY_EVERY_N:-0}
+    depends_on:
+      - mosquitto
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: iot-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: iot-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
 
 volumes:
-  mosquitto_data:
-  postgres_data:
+  iot_postgres_data:
+    name: iot_postgres_data
+  backend_mosquitto_data:
+    name: backend_mosquitto-data
+  prometheus_data:
+    name: iot_prometheus_data
+  grafana_data:
+    name: iot_grafana_data

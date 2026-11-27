@@ -1,5 +1,7 @@
 # Secrets
 .env
+deploy/.env
+deploy/mosquitto/passwordfile
 *.pem
 *.key
 
