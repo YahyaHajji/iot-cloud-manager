@@ -1,5 +1,5 @@
 import axios from "axios";
-import { mockDevices, mockMeasurements } from "./data/mockData";
+import { mockDevices, mockMeasurements, mockAlerts } from "./data/mockData";
 import {
   createDevicesService,
   apiErrorMessage,
@@ -16,6 +16,31 @@ export const devicesService = createDevicesService({
   mode: import.meta.env.VITE_DATA_MODE ?? "api", api, seed: mockDevices,
 });
 const mode = import.meta.env.VITE_DATA_MODE ?? "api";
+
+const mockAlertRows = mockAlerts.map((alert, index) => ({
+  id: alert.id,
+  deviceId: alert.deviceId,
+  deviceName: mockDevices.find(device => device.deviceId === alert.deviceId)?.name ?? alert.deviceId,
+  type: ['temperature', 'co2', 'presence', 'humidity'][index],
+  value: [31, 1250, 0, 36][index],
+  unit: ['°C', 'ppm', 'bool', '%'][index],
+  severity: alert.severity.toUpperCase(),
+  triggeredAt: new Date(Date.now() - [12, 28, 60, 120][index] * 60000).toISOString(),
+}));
+
+export const alertsService = {
+  mode,
+  async list() {
+    if (mode === "mock") return mockAlertRows;
+    const { data } = await api.get('/api/alerts');
+    return Array.isArray(data) ? data : data.content ?? data.alerts ?? [];
+  },
+  async byDevice(deviceId) {
+    if (mode === "mock") return mockAlertRows.filter(alert => alert.deviceId === deviceId);
+    const { data } = await api.get(`/api/alerts/device/${encodeURIComponent(deviceId)}`);
+    return Array.isArray(data) ? data : data.content ?? data.alerts ?? [];
+  },
+};
 
 export const measurementsService = {
   mode,

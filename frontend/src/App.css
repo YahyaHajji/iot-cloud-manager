@@ -626,6 +626,10 @@ button {
   color: #d34b43;
   background: #fff0ef
 }
+.badge.critical {
+  color: #dc2626;
+  background: #fef2f2;
+}
 
 .badge.info {
   color: #3974df;
