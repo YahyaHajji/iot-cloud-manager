@@ -112,6 +112,12 @@ public class SecurityConfig {
                         "/api/users/**"
                 ).hasRole("ADMIN")
 
+                // Commandes des appareils : ADMIN uniquement
+                .requestMatchers(
+                        "/api/devices/*/commands",
+                        "/api/devices/*/commands/**"
+                ).hasRole("ADMIN")
+
                 // Gestion des seuils : ADMIN uniquement
                 .requestMatchers(
                         "/api/alerts/thresholds",

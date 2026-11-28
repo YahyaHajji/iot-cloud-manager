@@ -5,6 +5,7 @@ import com.iotcloudmanager.backend.entity.AlertThreshold;
 import com.iotcloudmanager.backend.entity.Device;
 import com.iotcloudmanager.backend.repository.AlertRepository;
 import com.iotcloudmanager.backend.repository.AlertThresholdRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +34,9 @@ class AlertServiceTest {
 
     @Mock
     private AlertThresholdRepository thresholdRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private AlertService alertService;
@@ -76,6 +80,7 @@ class AlertServiceTest {
         assertEquals("°C", alert.getUnit());
         assertEquals("WARNING", alert.getSeverity());
         assertNotNull(alert.getTriggeredAt());
+        verify(eventPublisher).publishEvent(any(AlertCreatedEvent.class));
     }
 
     @Test
@@ -94,6 +99,7 @@ class AlertServiceTest {
         alertService.checkMeasurement(device, "temperature", 20.0, "°C");
 
         verify(alertRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test

@@ -24,6 +24,14 @@ vous demande le mot de passe de façon interactive.
 
 Ne versionnez jamais `deploy/.env` ni `deploy/mosquitto/passwordfile`.
 
+## Notifications par e-mail
+
+Configurez `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` et
+`ALERT_EMAIL_TO` dans `deploy/.env`. Les notifications sont envoyées après
+l'enregistrement de l'alerte, en arrière-plan; un même capteur et un même type
+de mesure ne déclenchent au plus qu'un e-mail toutes les dix minutes. Sans hôte
+SMTP ou destinataire configuré, les notifications restent désactivées.
+
 ## Démarrer les services
 
 ```sh

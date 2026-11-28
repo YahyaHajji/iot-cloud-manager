@@ -3,8 +3,10 @@ package com.iotcloudmanager.backend.mqtt;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.iotcloudmanager.backend.dto.DeviceCommandAcknowledgement;
 import com.iotcloudmanager.backend.dto.DeviceStatusMessage;
 import com.iotcloudmanager.backend.dto.TelemetryMessage;
+import com.iotcloudmanager.backend.service.DeviceCommandService;
 import com.iotcloudmanager.backend.service.DeviceStatusService;
 import com.iotcloudmanager.backend.service.MessageRejectedException;
 import com.iotcloudmanager.backend.service.TelemetryService;
@@ -30,6 +32,7 @@ public class MqttSubscriber implements MqttCallbackExtended {
 
     private final TelemetryService telemetryService;
     private final DeviceStatusService deviceStatusService;
+    private final DeviceCommandService deviceCommandService;
     private final ObjectMapper objectMapper;
     private final MqttConnectOptions connectOptions;
     private final Validator validator;
@@ -49,6 +52,7 @@ public class MqttSubscriber implements MqttCallbackExtended {
     public MqttSubscriber(
             TelemetryService telemetryService,
             DeviceStatusService deviceStatusService,
+            DeviceCommandService deviceCommandService,
             ObjectMapper objectMapper,
             MqttConnectOptions connectOptions,
             Validator validator,
@@ -56,6 +60,7 @@ public class MqttSubscriber implements MqttCallbackExtended {
 
         this.telemetryService = telemetryService;
         this.deviceStatusService = deviceStatusService;
+        this.deviceCommandService = deviceCommandService;
         this.objectMapper = objectMapper;
         this.connectOptions = connectOptions;
         this.validator = validator;
@@ -99,8 +104,9 @@ public class MqttSubscriber implements MqttCallbackExtended {
         try {
             client.subscribe("iot/devices/+/telemetry", 1);
             client.subscribe("iot/devices/+/status", 1);
+            client.subscribe("iot/devices/+/commands/ack", 1);
 
-            log.info("Abonnements MQTT actifs : telemetry et status.");
+            log.info("Abonnements MQTT actifs : telemetry, status et command ack.");
 
         } catch (MqttException e) {
             log.error("Erreur pendant les abonnements MQTT.", e);
@@ -144,6 +150,41 @@ public class MqttSubscriber implements MqttCallbackExtended {
             }
 
             String[] parts = topic.split("/", -1);
+
+            if (parts.length == 5
+                    && "iot".equals(parts[0])
+                    && "devices".equals(parts[1])
+                    && "commands".equals(parts[3])
+                    && "ack".equals(parts[4])) {
+
+                String deviceId = parts[2];
+                if (!deviceId.matches("^[a-z0-9-]{3,50}$")) {
+                    reject("invalid_device_id", "Identifiant invalide dans l'accusé");
+                    return;
+                }
+
+                String content = new String(payload, StandardCharsets.UTF_8);
+                DeviceCommandAcknowledgement acknowledgement =
+                        objectMapper.readValue(
+                                content,
+                                DeviceCommandAcknowledgement.class
+                        );
+
+                if (!deviceId.equals(acknowledgement.getDeviceId())) {
+                    reject("invalid_message",
+                            "Le deviceId de l'accusé ne correspond pas au topic");
+                    return;
+                }
+
+                if (!isValid(acknowledgement)) {
+                    reject("invalid_message",
+                            "Validation du message command ack échouée");
+                    return;
+                }
+
+                deviceCommandService.processAcknowledgement(acknowledgement);
+                return;
+            }
 
             if (parts.length != 4
                     || !"iot".equals(parts[0])
