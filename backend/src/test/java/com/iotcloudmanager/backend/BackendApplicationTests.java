@@ -2,6 +2,8 @@ package com.iotcloudmanager.backend;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,16 @@ class BackendApplicationTests {
 			assertNotEquals(401, status, path + " must not require authentication");
 			assertNotEquals(403, status, path + " must not be forbidden");
 		}
+	}
+
+	@Test
+	void swaggerUiAndOpenApiDocumentAreAvailable() throws Exception {
+		mockMvc.perform(get("/v3/api-docs"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.openapi").exists());
+
+		mockMvc.perform(get("/swagger-ui/index.html"))
+				.andExpect(status().isOk());
 	}
 
 }
