@@ -22,6 +22,9 @@ import java.time.ZoneOffset;
 @Service
 public class TelemetryService {
 
+    public static final String RESULT_PROCESSED = "Message traité avec succès";
+    public static final String RESULT_DUPLICATE = "Message déjà traité";
+
     private final DeviceRepository deviceRepository;
     private final MeasurementRepository measurementRepository;
     private final MeasurementTypeRepository measurementTypeRepository;
@@ -77,14 +80,16 @@ public class TelemetryService {
 
         Device device = deviceRepository.findByDeviceId(topicDeviceId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Appareil non enregistré"));
+                        new MessageRejectedException(
+                                "unknown_device", "Appareil non enregistré"));
 
         if (!device.isEnabled()) {
-            throw new IllegalArgumentException("Appareil désactivé");
+            throw new MessageRejectedException(
+                    "device_disabled", "Appareil désactivé");
         }
 
         if (processedMessageRepository.existsByMessageId(message.getMessageId())) {
-            return "Message déjà traité";
+            return RESULT_DUPLICATE;
         }
 
 
@@ -101,12 +106,14 @@ public class TelemetryService {
             MeasurementType type = measurementTypeRepository
                     .findByTypeAndEnabledTrue(input.getType())
                     .orElseThrow(() ->
-                            new IllegalArgumentException(
+                            new MessageRejectedException(
+                                    "unknown_measurement_type",
                                     "Type de mesure inconnu ou désactivé : "
                                             + input.getType()));
 
             if (!type.getUnit().equals(input.getUnit())) {
-                throw new IllegalArgumentException(
+                throw new MessageRejectedException(
+                        "invalid_unit",
                         "Unité incorrecte pour " + input.getType());
             }
 
@@ -117,13 +124,15 @@ public class TelemetryService {
             }
 
             if (type.getMinValue() != null && value < type.getMinValue()) {
-                throw new IllegalArgumentException(
+                throw new MessageRejectedException(
+                        "value_out_of_range",
                         "Valeur inférieure à la limite autorisée pour "
                                 + input.getType());
             }
 
             if (type.getMaxValue() != null && value > type.getMaxValue()) {
-                throw new IllegalArgumentException(
+                throw new MessageRejectedException(
+                        "value_out_of_range",
                         "Valeur supérieure à la limite autorisée pour "
                                 + input.getType());
             }
@@ -169,6 +178,6 @@ public class TelemetryService {
 
         deviceRepository.save(device);
 
-        return "Message traité avec succès";
+        return RESULT_PROCESSED;
     }
 }
