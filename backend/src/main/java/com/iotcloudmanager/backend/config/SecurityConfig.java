@@ -99,6 +99,14 @@ public class SecurityConfig {
                 // Connexion publique
                 .requestMatchers("/api/auth/login").permitAll()
 
+                // Documentation OpenAPI/Swagger publique
+                .requestMatchers(
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**"
+                ).permitAll()
+
                 // Santé publique
                 .requestMatchers(
                         "/actuator/health",
