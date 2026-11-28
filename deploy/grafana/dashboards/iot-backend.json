@@ -483,6 +483,62 @@
           "placement": "bottom"
         }
       }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Messages MQTT acceptés, doublons et rejets (par minute)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (type) (rate(mqtt_messages_accepted_total{job=\"iot-backend\"}[5m])) * 60",
+          "legendFormat": "acceptés {{type}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (type) (rate(mqtt_messages_duplicate_total{job=\"iot-backend\"}[5m])) * 60",
+          "legendFormat": "doublons {{type}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(mqtt_messages_rejected_total{job=\"iot-backend\"}[5m])) * 60",
+          "legendFormat": "rejetés",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     }
   ],
   "templating": {

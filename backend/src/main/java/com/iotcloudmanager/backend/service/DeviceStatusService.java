@@ -19,6 +19,9 @@ import java.util.Locale;
 @Service
 public class DeviceStatusService {
 
+    public static final String RESULT_DUPLICATE =
+            "Message de statut déjà traité";
+
     private final DeviceRepository deviceRepository;
     private final ProcessedMessageRepository processedMessageRepository;
 
@@ -70,20 +73,20 @@ public class DeviceStatusService {
         if (processedMessageRepository.existsByMessageId(
                 message.getMessageId())) {
 
-            return "Message de statut déjà traité";
+            return RESULT_DUPLICATE;
         }
 
         // 6. Vérifier que le capteur existe
         Device device = deviceRepository
                 .findByDeviceId(topicDeviceId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Appareil non enregistré"));
+                        new MessageRejectedException(
+                                "unknown_device", "Appareil non enregistré"));
 
         // 7. Vérifier que le capteur est activé
         if (!device.isEnabled()) {
-            throw new IllegalArgumentException(
-                    "Appareil désactivé");
+            throw new MessageRejectedException(
+                    "device_disabled", "Appareil désactivé");
         }
 
         // 8. Normaliser le statut

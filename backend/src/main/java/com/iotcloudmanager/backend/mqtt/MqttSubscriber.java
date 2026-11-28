@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iotcloudmanager.backend.dto.DeviceStatusMessage;
 import com.iotcloudmanager.backend.dto.TelemetryMessage;
 import com.iotcloudmanager.backend.service.DeviceStatusService;
+import com.iotcloudmanager.backend.service.MessageRejectedException;
 import com.iotcloudmanager.backend.service.TelemetryService;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
@@ -180,7 +181,13 @@ public class MqttSubscriber implements MqttCallbackExtended {
                     return;
                 }
 
-                telemetryService.processTelemetry(deviceId, message);
+                String result =
+                        telemetryService.processTelemetry(deviceId, message);
+
+                recordResult(
+                        messageType,
+                        TelemetryService.RESULT_DUPLICATE.equals(result)
+                );
 
             } else if ("status".equals(messageType)) {
 
@@ -195,7 +202,13 @@ public class MqttSubscriber implements MqttCallbackExtended {
                     return;
                 }
 
-                deviceStatusService.processStatus(deviceId, message);
+                String result =
+                        deviceStatusService.processStatus(deviceId, message);
+
+                recordResult(
+                        messageType,
+                        DeviceStatusService.RESULT_DUPLICATE.equals(result)
+                );
 
             } else {
                 reject("invalid_message_type", "Type de message MQTT inconnu");
@@ -203,6 +216,9 @@ public class MqttSubscriber implements MqttCallbackExtended {
 
         } catch (JsonProcessingException e) {
             reject("invalid_json", "Le contenu JSON est invalide");
+
+        } catch (MessageRejectedException e) {
+            reject(e.getReason(), e.getMessage());
 
         } catch (IllegalArgumentException e) {
             reject("processing_error", e.getMessage());
@@ -232,6 +248,31 @@ public class MqttSubscriber implements MqttCallbackExtended {
         }
 
         return true;
+    }
+
+    /**
+     * Compte un message traité : accepté s'il est nouveau, doublon sinon.
+     * Le compteur « duplicate » évite de compter deux fois un même message
+     * dans le débit de télémétrie.
+     */
+    private void recordResult(String messageType, boolean duplicate) {
+
+        if (duplicate) {
+            meterRegistry.counter(
+                    "mqtt.messages.duplicate",
+                    "type",
+                    messageType
+            ).increment();
+
+            log.info("Message MQTT {} déjà traité, ignoré.", messageType);
+            return;
+        }
+
+        meterRegistry.counter(
+                "mqtt.messages.accepted",
+                "type",
+                messageType
+        ).increment();
     }
 
     private void reject(String reason, String detail) {
