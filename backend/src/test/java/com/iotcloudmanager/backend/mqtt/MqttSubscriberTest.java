@@ -44,6 +44,14 @@ class MqttSubscriberTest {
 
     private static final String STATUS_JSON = """
             {"schemaVersion":1,
+             "deviceId":"sensor-room-01",
+             "status":"online",
+             "timestamp":"2026-10-28T10:00:00Z",
+             "intervalSec":5}
+            """;
+
+    private static final String STATUS_JSON_WITH_MESSAGE_ID = """
+            {"schemaVersion":1,
              "messageId":"4a1c9a2e-8b7d-4c1a-9e2f-1a2b3c4d5e6f",
              "deviceId":"sensor-room-01",
              "status":"online",
@@ -134,7 +142,7 @@ class MqttSubscriberTest {
         when(deviceStatusService.processStatus(eq("sensor-room-01"), any(DeviceStatusMessage.class)))
                 .thenReturn(DeviceStatusService.RESULT_DUPLICATE);
 
-        send(STATUS_TOPIC, STATUS_JSON);
+        send(STATUS_TOPIC, STATUS_JSON_WITH_MESSAGE_ID);
 
         assertEquals(1, duplicate("status"));
         assertEquals(0, accepted("status"));
