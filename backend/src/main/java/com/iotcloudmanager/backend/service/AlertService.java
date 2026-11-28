@@ -6,6 +6,7 @@ import com.iotcloudmanager.backend.entity.AlertThreshold;
 import com.iotcloudmanager.backend.entity.Device;
 import com.iotcloudmanager.backend.repository.AlertRepository;
 import com.iotcloudmanager.backend.repository.AlertThresholdRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,13 +18,16 @@ public class AlertService {
 
     private final AlertRepository alertRepository;
     private final AlertThresholdRepository thresholdRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AlertService(
             AlertRepository alertRepository,
-            AlertThresholdRepository thresholdRepository
+            AlertThresholdRepository thresholdRepository,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.alertRepository = alertRepository;
         this.thresholdRepository = thresholdRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -64,6 +68,14 @@ public class AlertService {
         alert.setTriggeredAt(LocalDateTime.now());
 
         alertRepository.save(alert);
+        eventPublisher.publishEvent(new AlertCreatedEvent(
+                device.getDeviceId(),
+                device.getName(),
+                type,
+                value,
+                unit,
+                alert.getTriggeredAt()
+        ));
     }
 
     public List<Alert> getAllAlerts() {

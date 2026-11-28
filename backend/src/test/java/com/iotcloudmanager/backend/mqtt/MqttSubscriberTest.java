@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.iotcloudmanager.backend.dto.DeviceStatusMessage;
 import com.iotcloudmanager.backend.dto.TelemetryMessage;
+import com.iotcloudmanager.backend.service.DeviceCommandService;
 import com.iotcloudmanager.backend.service.DeviceStatusService;
 import com.iotcloudmanager.backend.service.MessageRejectedException;
 import com.iotcloudmanager.backend.service.TelemetryService;
@@ -30,6 +31,8 @@ class MqttSubscriberTest {
 
     private static final String TELEMETRY_TOPIC = "iot/devices/sensor-room-01/telemetry";
     private static final String STATUS_TOPIC = "iot/devices/sensor-room-01/status";
+    private static final String COMMAND_ACK_TOPIC =
+            "iot/devices/sensor-room-01/commands/ack";
 
     private static final String TELEMETRY_JSON = """
             {"schemaVersion":1,
@@ -54,6 +57,9 @@ class MqttSubscriberTest {
     @Mock
     private DeviceStatusService deviceStatusService;
 
+    @Mock
+    private DeviceCommandService deviceCommandService;
+
     private SimpleMeterRegistry registry;
     private MqttSubscriber subscriber;
 
@@ -65,6 +71,7 @@ class MqttSubscriberTest {
         subscriber = new MqttSubscriber(
                 telemetryService,
                 deviceStatusService,
+                deviceCommandService,
                 mapper,
                 new MqttConnectOptions(),
                 validator,
@@ -197,5 +204,32 @@ class MqttSubscriberTest {
 
         assertEquals(1, rejected("empty_payload"));
         assertEquals(1, rejected("payload_too_large"));
+    }
+
+    @Test
+    void accuseCommandeValideEstTransmisAuService() {
+        String commandId = "a7e4b2c1-5d6f-4e3a-8b9c-0d1e2f3a4b5c";
+        send(COMMAND_ACK_TOPIC, """
+                {"schemaVersion":1,
+                 "commandId":"%s",
+                 "deviceId":"sensor-room-01",
+                 "result":"ok",
+                 "timestamp":"2026-10-28T10:20:01Z"}
+                """.formatted(commandId));
+
+        verify(deviceCommandService).processAcknowledgement(any());
+    }
+
+    @Test
+    void accuseDontLeCapteurNeCorrespondPasAuTopicEstRejete() {
+        send(COMMAND_ACK_TOPIC, """
+                {"schemaVersion":1,
+                 "commandId":"a7e4b2c1-5d6f-4e3a-8b9c-0d1e2f3a4b5c",
+                 "deviceId":"sensor-room-02",
+                 "result":"ok"}
+                """);
+
+        assertEquals(1, rejected("invalid_message"));
+        verify(deviceCommandService, never()).processAcknowledgement(any());
     }
 }

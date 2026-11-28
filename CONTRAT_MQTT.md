@@ -170,6 +170,34 @@ Après `set_interval`, `enable` ou `disable`, le capteur republie aussi son mess
 - `result` : `ok` ou `error` (par ex. type de commande inconnu, paramètre invalide).
 - Le backend stocke chaque commande avec un état : `PENDING` → `ACKNOWLEDGED` / `FAILED`, ou `TIMEOUT` si aucun ack n'arrive en 10 secondes.
 
+### API REST des commandes
+
+`POST /api/devices/{id}/commands` — réservé à `ADMIN`
+
+Le champ `{id}` est l'identifiant numérique de l'appareil. Corps :
+
+```json
+{
+  "type": "set_interval",
+  "params": { "intervalSec": 10 }
+}
+```
+
+Types acceptés :
+
+| `type` | `params` |
+|---|---|
+| `set_interval` | `{ "intervalSec": 1..3600 }` |
+| `enable` | `{}` |
+| `disable` | `{}` |
+| `ping` | `{}` |
+
+Réponse : `201 Created` avec l'identifiant UUID de la commande, son état `PENDING`, ses paramètres et ses horodatages.
+
+`GET /api/devices/{id}/commands` — réservé à `ADMIN`
+
+Retourne l'historique des commandes du capteur, du plus récent au plus ancien.
+
 ---
 
 ## 6. Capteurs non déclarés
