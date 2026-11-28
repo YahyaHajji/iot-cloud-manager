@@ -38,8 +38,13 @@ SMTP ou destinataire configuré, les notifications restent désactivées.
 docker compose up -d --build
 ```
 
-Les ports MQTT et API sont liés à `127.0.0.1`; utilisez un tunnel SSH pour y
-accéder depuis une autre machine.
+L'API et le listener MQTT TCP local (1883) sont liés à `127.0.0.1`; utilisez
+un tunnel SSH pour y accéder depuis une autre machine. Le backend et le
+simulateur de cette configuration Compose utilisent le broker TLS à
+`iot-manager-yahya.duckdns.org:8883`. Avant de les démarrer, ce nom doit pointer
+vers un listener Mosquitto TLS accessible depuis les conteneurs, avec un
+certificat valide pour ce nom. La configuration du listener et l'ouverture du
+port 8883 sur le serveur restent des prérequis d'infrastructure.
 
 ## Frontend, Nginx et HTTPS
 
@@ -119,9 +124,10 @@ docker compose up -d prometheus grafana
 
 ## Simulateur de capteurs
 
-Le service `simulator` publie la télémétrie de capteurs fictifs sur Mosquitto,
-dans le réseau Docker (`MQTT_HOST=mosquitto`). Chaque capteur se connecte avec
-son `deviceId` comme nom d'utilisateur MQTT.
+Le service `simulator` publie la télémétrie des capteurs fictifs sur le broker
+TLS défini dans `deploy/docker-compose.yml`. Chaque capteur se connecte avec
+son `deviceId` comme nom d'utilisateur MQTT. Le simulateur vérifie le
+certificat du broker avec les autorités système.
 
 ### Avant de le démarrer
 

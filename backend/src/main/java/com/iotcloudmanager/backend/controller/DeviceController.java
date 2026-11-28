@@ -5,6 +5,7 @@ import com.iotcloudmanager.backend.dto.DeviceResponse;
 import com.iotcloudmanager.backend.entity.Device;
 import com.iotcloudmanager.backend.service.DeviceService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/devices")
+@SecurityRequirement(name = "bearerAuth")
 public class DeviceController {
 
     private final DeviceService deviceService;

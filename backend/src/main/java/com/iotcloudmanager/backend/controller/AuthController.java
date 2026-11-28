@@ -7,6 +7,7 @@ import com.iotcloudmanager.backend.dto.UserResponse;
 import com.iotcloudmanager.backend.service.AuthService;
 import com.iotcloudmanager.backend.service.UserService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
@@ -55,6 +56,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<UserResponse> getCurrentUser(
             @AuthenticationPrincipal UserDetails principal
     ) {

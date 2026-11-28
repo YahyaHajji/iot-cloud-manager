@@ -40,7 +40,7 @@ services:
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       MQTT_ENABLED: "true"
-      MQTT_URL: tcp://mosquitto:1883
+      MQTT_URL: ssl://iot-manager-yahya.duckdns.org:8883
       MQTT_CLIENT_ID: iot-backend-1
       MQTT_USERNAME: ${MQTT_USERNAME}
       MQTT_PASSWORD: ${MQTT_PASSWORD}
@@ -59,8 +59,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mosquitto:
-        condition: service_started
 
   frontend:
     build:
@@ -86,13 +84,12 @@ services:
     container_name: iot-simulator
     restart: unless-stopped
     environment:
-      MQTT_HOST: mosquitto
-      MQTT_PORT: "1883"
+      MQTT_HOST: iot-manager-yahya.duckdns.org
+      MQTT_PORT: "8883"
+      MQTT_TLS: "true"
       SIMULATOR_SENSORS: ${SIMULATOR_SENSORS}
       HEARTBEAT_INTERVAL_SEC: ${HEARTBEAT_INTERVAL_SEC:-30}
       ANOMALY_EVERY_N: ${ANOMALY_EVERY_N:-0}
-    depends_on:
-      - mosquitto
 
   prometheus:
     image: prom/prometheus:v2.55.1
