@@ -12,6 +12,7 @@ par défaut.
 | --- | --- | --- | --- |
 | `MQTT_HOST` | non | `localhost` | Hôte du broker MQTT |
 | `MQTT_PORT` | non | `1883` | Port du broker MQTT |
+| `MQTT_TLS` | non | `false` | Active TLS avec les certificats CA de confiance du système (`true` ou `false`) |
 | `SIMULATOR_SENSORS` | oui | aucune | Tableau JSON de capteurs avec `deviceId`, `intervalSec` et `password` |
 | `HEARTBEAT_INTERVAL_SEC` | non | `30` | Intervalle des messages de statut online, de 1 à 3600 secondes |
 | `ANOMALY_EVERY_N` | non | `0` (désactivé) | Une température de 45 °C est envoyée à chaque N-ième mesure; `0` désactive le mode |
@@ -48,11 +49,16 @@ mot de passe de test local qui correspond au compte créé avec `mosquitto_passw
 ```sh
 export MQTT_HOST=localhost
 export MQTT_PORT=1883
+export MQTT_TLS=false
 export SIMULATOR_SENSORS='[{"deviceId":"sensor-room-01","intervalSec":5,"password":"CHANGE_ME"}]'
 export HEARTBEAT_INTERVAL_SEC=30
 export ANOMALY_EVERY_N=5
 python simulator/simulateur.py
 ```
+
+Pour un broker TLS, utilisez son nom DNS correspondant au certificat, le port
+TLS (généralement `8883`) et `MQTT_TLS=true`. Le simulateur vérifie le certificat
+du broker avec les autorités de certification du système.
 
 Le mode anomalie est facultatif; supprimez `ANOMALY_EVERY_N` ou mettez-le à `0`
 pour le désactiver.

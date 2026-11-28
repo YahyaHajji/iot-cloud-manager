@@ -6,6 +6,7 @@ import com.iotcloudmanager.backend.dto.CreateUserRequest;
 import com.iotcloudmanager.backend.dto.UserResponse;
 import com.iotcloudmanager.backend.service.UserService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@SecurityRequirement(name = "bearerAuth")
 public class UserController {
 
     private final UserService userService;

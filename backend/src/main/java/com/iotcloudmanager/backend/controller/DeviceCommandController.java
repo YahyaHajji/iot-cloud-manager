@@ -3,6 +3,7 @@ package com.iotcloudmanager.backend.controller;
 import com.iotcloudmanager.backend.dto.CreateDeviceCommandRequest;
 import com.iotcloudmanager.backend.dto.DeviceCommandResponse;
 import com.iotcloudmanager.backend.service.DeviceCommandService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/devices")
+@SecurityRequirement(name = "bearerAuth")
 public class DeviceCommandController {
 
     private final DeviceCommandService commandService;

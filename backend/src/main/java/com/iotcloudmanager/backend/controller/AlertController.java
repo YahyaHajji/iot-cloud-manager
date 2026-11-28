@@ -14,6 +14,7 @@ import com.iotcloudmanager.backend.repository.MeasurementTypeRepository;
 
 import com.iotcloudmanager.backend.service.AlertService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/alerts")
+@SecurityRequirement(name = "bearerAuth")
 public class AlertController {
 
     private final AlertService alertService;

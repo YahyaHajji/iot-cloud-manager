@@ -116,22 +116,40 @@ def publish(client, topic, payload, retain=False):
     return result
 
 
-def run_sensor(sensor, broker_host, broker_port, heartbeat_interval_sec, anomaly_every_n=0):
-    topic_prefix = f"iot/devices/{sensor.device_id}"
-    connected = threading.Event()
-    next_heartbeat = 0.0
+def parse_mqtt_tls(value):
+    normalized = value.strip().lower()
+    if normalized not in {"true", "false"}:
+        raise ValueError("MQTT_TLS must be true or false")
+    return normalized == "true"
+
+
+def create_mqtt_client(sensor, mqtt_tls):
     client = mqtt.Client(
         callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
         client_id=sensor.device_id,
         protocol=mqtt.MQTTv311,
     )
     client.username_pw_set(sensor.device_id, sensor.password)
+    if mqtt_tls:
+        client.tls_set()
+    topic_prefix = f"iot/devices/{sensor.device_id}"
     client.will_set(
         f"{topic_prefix}/status",
         json.dumps(status_payload(sensor.device_id, "offline", reason="connection_lost")),
         qos=1,
         retain=True,
     )
+    return client
+
+
+def run_sensor(
+    sensor, broker_host, broker_port, heartbeat_interval_sec,
+    anomaly_every_n=0, mqtt_tls=False
+):
+    topic_prefix = f"iot/devices/{sensor.device_id}"
+    connected = threading.Event()
+    next_heartbeat = 0.0
+    client = create_mqtt_client(sensor, mqtt_tls)
 
     def on_connect(mqtt_client, _userdata, _flags, reason_code, _properties):
         nonlocal next_heartbeat
@@ -216,6 +234,7 @@ def main():
     sensors = load_sensor_configs(raw_sensors)
     broker_host = os.getenv("MQTT_HOST", "localhost")
     broker_port = int(os.getenv("MQTT_PORT", "1883"))
+    mqtt_tls = parse_mqtt_tls(os.getenv("MQTT_TLS", "false"))
     heartbeat_interval_sec = int(os.getenv("HEARTBEAT_INTERVAL_SEC", "30"))
     if not 1 <= heartbeat_interval_sec <= 3600:
         raise ValueError("HEARTBEAT_INTERVAL_SEC must be between 1 and 3600")
@@ -232,7 +251,14 @@ def main():
     threads = [
         threading.Thread(
             target=run_sensor,
-            args=(sensor, broker_host, broker_port, heartbeat_interval_sec, anomaly_every_n),
+            args=(
+                sensor,
+                broker_host,
+                broker_port,
+                heartbeat_interval_sec,
+                anomaly_every_n,
+                mqtt_tls,
+            ),
             name=sensor.device_id,
         )
         for sensor in sensors
