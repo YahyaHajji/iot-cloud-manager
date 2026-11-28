@@ -36,7 +36,7 @@
 
 **Abonnement de chaque capteur :** `iot/devices/{sonDeviceId}/commands`
 
-**Pourquoi QoS 1 :** chaque message arrive au moins une fois. Un message peut arriver en double ; le backend ignore les doublons grâce à `messageId` (voir section 7).
+**Pourquoi QoS 1 :** chaque message arrive au moins une fois. Un message peut arriver en double ; le backend ignore les doublons grâce à `messageId` lorsqu'il est fourni (obligatoire pour la télémétrie, optionnel pour les statuts).
 
 ---
 
@@ -117,6 +117,8 @@ Message publié avant une déconnexion volontaire :
 ```
 
 Le LWT n'a pas de `timestamp` (il est écrit à l'avance) : le backend utilise alors l'heure de réception.
+
+`messageId` est optionnel pour les messages de statut. Lorsqu'il est fourni, il doit être un UUID valide et permet d'ignorer les doublons ; lorsqu'il est absent, le statut est traité sans déduplication par identifiant.
 
 | Champ | Valeurs |
 |---|---|

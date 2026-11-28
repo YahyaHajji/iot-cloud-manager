@@ -61,17 +61,17 @@ public class DeviceStatusService {
                     "DeviceId invalide");
         }
 
-        // 4. Vérifier le messageId
-        if (message.getMessageId() == null
-                || message.getMessageId().isBlank()) {
+        // 4. Vérifier le messageId lorsqu'il est fourni
+        String messageId = message.getMessageId();
+        if (messageId != null && messageId.isBlank()) {
 
             throw new IllegalArgumentException(
                     "Message de statut incomplet");
         }
 
-        // 5. Éviter les doublons
-        if (processedMessageRepository.existsByMessageId(
-                message.getMessageId())) {
+        // 5. Éviter les doublons lorsque le messageId est fourni
+        if (messageId != null
+                && processedMessageRepository.existsByMessageId(messageId)) {
 
             return RESULT_DUPLICATE;
         }
@@ -141,18 +141,20 @@ public class DeviceStatusService {
 
         deviceRepository.save(device);
 
-        // 13. Enregistrer le message traité
-        ProcessedMessage processed = new ProcessedMessage();
+        // 13. Enregistrer le message traité si un identifiant est disponible
+        if (messageId != null) {
+            ProcessedMessage processed = new ProcessedMessage();
 
-        processed.setMessageId(message.getMessageId());
-        processed.setDeviceId(message.getDeviceId());
+            processed.setMessageId(messageId);
+            processed.setDeviceId(message.getDeviceId());
 
-        processed.setProcessedAt(
-                LocalDateTime.ofInstant(
-                        Instant.now(),
-                        ZoneOffset.UTC));
+            processed.setProcessedAt(
+                    LocalDateTime.ofInstant(
+                            Instant.now(),
+                            ZoneOffset.UTC));
 
-        processedMessageRepository.save(processed);
+            processedMessageRepository.save(processed);
+        }
 
         return "Statut mis à jour : " + status;
     }

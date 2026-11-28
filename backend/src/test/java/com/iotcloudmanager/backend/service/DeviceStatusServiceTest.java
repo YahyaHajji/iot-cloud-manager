@@ -87,6 +87,40 @@ class DeviceStatusServiceTest {
     }
 
     @Test
+    void shouldSetDeviceOnlineWhenMessageIdIsAbsent() {
+        message.setMessageId(null);
+        when(deviceRepository.findByDeviceId("sensor-001"))
+                .thenReturn(Optional.of(device));
+
+        String result = deviceStatusService.processStatus(
+                "sensor-001", message);
+
+        assertEquals("Statut mis à jour : ONLINE", result);
+        assertEquals(DeviceStatus.ONLINE, device.getStatus());
+        verify(deviceRepository).save(device);
+        verify(processedMessageRepository, never()).existsByMessageId(anyString());
+        verify(processedMessageRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldProcessLastWillWithoutMessageIdOrTimestamp() {
+        message.setMessageId(null);
+        message.setStatus("OFFLINE");
+        message.setTimestamp(null);
+        when(deviceRepository.findByDeviceId("sensor-001"))
+                .thenReturn(Optional.of(device));
+
+        String result = deviceStatusService.processStatus(
+                "sensor-001", message);
+
+        assertEquals("Statut mis à jour : OFFLINE", result);
+        assertEquals(DeviceStatus.OFFLINE, device.getStatus());
+        assertNotNull(device.getLastSeenAt());
+        verify(processedMessageRepository, never()).existsByMessageId(anyString());
+        verify(processedMessageRepository, never()).save(any());
+    }
+
+    @Test
     void shouldSetDeviceOffline() {
 
         message.setStatus("OFFLINE");
